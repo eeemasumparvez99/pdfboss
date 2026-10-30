@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDFBoss — আপনার PDF-এর বস</title>
+<meta name="description" content="PDFBoss — ফ্রি PDF টুলস: Merge, Split, Compress, Word to PDF, Excel to PDF সবকিছু ব্রাউজারেই, ফাইল আপলোড ছাড়াই।">
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--red:#e5322d;--bg:#f7f7fb}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI','Noto Sans Bengali',system-ui,sans-serif}
+body{background:var(--bg);color:#222;min-height:100vh;display:flex;flex-direction:column}
+header{background:linear-gradient(135deg,#e5322d,#ff6b5e);color:#fff;text-align:center;padding:26px 16px 52px}
+.logo{width:86px;height:86px;border-radius:20px;background:#fff;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(0,0,0,.18);margin-bottom:10px;overflow:hidden}
+.logo img{width:78px;height:78px;object-fit:contain}
+h1{font-size:40px;letter-spacing:1px}
+.brand b{color:#ffd9d6}
+.tag{opacity:.95;margin-top:8px;font-size:17px}
+.secure{margin-top:14px;font-size:13px;background:rgba(255,255,255,.18);display:inline-block;padding:6px 14px;border-radius:20px}
+.wrap{max-width:1050px;margin:-32px auto 40px;padding:0 16px;width:100%}
+.search{width:100%;max-width:430px;display:block;margin:0 auto 22px;padding:13px 18px;border:1px solid #ddd;border-radius:12px;font-size:15px;outline:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.card{background:#fff;border:1px solid #ececf3;border-radius:14px;padding:22px 12px;text-align:center;cursor:pointer;transition:.2s}
+.card:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(0,0,0,.09)}
+.card .ico{font-size:34px;display:block}
+.card b{display:block;margin-top:8px;font-size:14.5px}
+.card span{display:block;font-size:12px;color:#777;margin-top:3px}
+footer{text-align:center;color:#999;font-size:13px;padding:18px;margin-top:auto}
+#overlay{position:fixed;inset:0;background:rgba(20,20,40,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+#overlay.on{display:flex}
+#modal{background:#fff;border-radius:16px;max-width:560px;width:100%;padding:26px;position:relative;max-height:90vh;overflow:auto}
+#modal h2{color:var(--red)}
+#mdesc{font-size:14px;color:#666;margin:6px 0 4px}
+#close{position:absolute;top:10px;right:14px;border:none;background:none;font-size:26px;cursor:pointer;color:#888}
+.drop{border:2px dashed #d5d5e2;border-radius:12px;padding:26px;text-align:center;color:#666;cursor:pointer;margin:14px 0}
+.drop:hover{border-color:var(--red)}
+.btn{background:var(--red);color:#fff;border:none;padding:12px 26px;border-radius:10px;font-size:15px;cursor:pointer;margin-top:12px}
+.btn:disabled{background:#ccc}
+.opt{margin:10px 0}
+.opt label{font-size:13px;color:#555;display:block;margin-bottom:4px}
+.opt input,.opt select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px}
+#status{margin-top:12px;font-size:14px;min-height:20px}
+.ok{color:#0a7d32;font-weight:600}.err{color:#c00}
+.filelist{font-size:13px;color:#666;margin-top:6px;word-break:break-all}
+.hint{font-size:12px;color:#999;margin-top:4px}
+#renderbox{position:fixed;left:-9999px;top:0;width:794px;background:#fff;padding:24px;color:#111;font-size:14px}
+#renderbox table{border-collapse:collapse;width:100%}
+#renderbox td,#renderbox th{border:1px solid #999;padding:6px 8px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><img src="https://d2lm3begjhzc49.cloudfront.net/generated-images/c82a2ea8.webp" alt="PDFBoss Logo" onerror="this.style.display='none'"></div>
+  <h1 class="brand">PDF<b>Boss</b></h1>
+  <p class="tag">আপনার সব PDF কাজ — এক জায়গায়, সম্পূর্ণ ফ্রি</p>
+  <div class="secure">🔒 ১০০% সিকিউর — ফাইল আপনার ব্রাউজারেই প্রসেস হয়, কোথাও আপলোড হয় না</div>
+</header>
+<div class="wrap">
+  <input class="search" id="search" placeholder="🔍 টুল খুঁজুন...">
+  <div class="grid" id="grid"></div>
+</div>
+<div id="overlay"><div id="modal">
+  <button id="close" title="বন্ধ করুন">×</button>
+  <h2 id="mtitle"></h2>
+  <p id="mdesc"></p>
+  <div id="mbody"></div>
+  <div id="status"></div>
+</div></div>
+<div id="renderbox"></div>
+<footer>PDFBoss © 2026 — Made with ❤️ | সব টুল ব্রাউজারে চলে, কোনো সার্ভারে ফাইল যায় না</footer>
+<script>
+if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const TOOLS=[
+ {id:'merge',ic:'🔗',t:'Merge PDF',d:'একাধিক PDF একসাথে জোড়া দিন',desc:'একাধিক PDF ফাইল সিলেক্ট করুন, সবগুলো জুড়ে একটি PDF হবে।',multi:1,acc:'application/pdf'},
+ {id:'split',ic:'✂️',t:'Split PDF',d:'PDF প্রতি পেজে ভাগ করুন',desc:'প্রতিটি পেজ আলাদা PDF হিসেবে ZIP ফাইলে পাবেন।',acc:'application/pdf'},
+ {id:'organize',ic:'🗂️',t:'Organize PDF',d:'পেজ ডিলিট/রিঅর্ডার করুন',desc:'যেমন "1-3,5,8" লিখে শুধু সেই পেজগুলো রাখুন।',hint:'যেমন: 1-3,5,8 (খালি রাখলে সব পেজ)',acc:'application/pdf'},
+ {id:'remove',ic:'🗑️',t:'Remove Pages',d:'নির্দিষ্ট পেজ মুছুন',desc:'যেমন "2,5-7" লিখলে ওই পেজগুলো বাদ যাবে।',hint:'যেমন: 2,5-7',acc:'application/pdf'},
+ {id:'compress',ic:'🗜️',t:'Compress PDF',d:'ফাইল সাইজ কমান',desc:'PDF পুনর্লিখন ও মেটাডেটা সরিয়ে সাইজ কমানোর চেষ্টা করে। স্ক্যান করা ফাইলে কম কাজ করতে পারে।',acc:'application/pdf'},
+ {id:'rotate',ic:'🔄',t:'Rotate PDF',d:'পেজ ঘোরান',desc:'সব পেজ ৯০/১৮০/২৭০ ডিগ্রিতে ঘুরিয়ে দিন।',acc:'application/pdf'},
+ {id:'img2pdf',ic:'🖼️',t:'Image to PDF',d:'JPG/PNG কে PDF বানান',desc:'একাধিক ছবি সিলেক্ট করুন, প্রতিটি ছবি এক পেজ হয়ে একটি PDF হবে।',multi:1,acc:'image/jpeg,image/png'},
+ {id:'pdf2img',ic:'📸',t:'PDF to JPG',d:'PDF-এর পেজ JPG করুন',desc:'প্রতিটি পেজ JPG হিসেবে ZIP-এ পাবেন।',acc:'application/pdf'},
+ {id:'watermark',ic:'🔖',t:'Watermark',d:'টেক্সট ওয়াটারমার্ক দিন',desc:'PDF-এর প্রতিটি পেজে টেক্সট ওয়াটারমার্ক বসান।',acc:'application/pdf'},
+ {id:'pagenum',ic:'#️⃣',t:'Page Numbers',d:'পেজ নম্বর যোগ করুন',desc:'প্রতিটি পেজের নিচে নম্বর বসান।',acc:'application/pdf'},
+ {id:'word2pdf',ic:'📝',t:'Word to PDF',d:'.docx ফাইল PDF বানান',desc:'Word (.docx) ফাইলের লেখা/ছক পড়ে সুন্দর ফরম্যাটে PDF বানায়। জটিল লেআউট পরিবর্তিত হতে পারে।',acc:'.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document'},
+ {id:'excel2pdf',ic:'📊',t:'Excel to PDF',d:'.xlsx ফাইল PDF বানান',desc:'Excel শিটের ডেটা টেবিল আকারে PDF-এ বসায় (প্রতি শিট আলাদা পেজ)।',acc:'.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},
+ {id:'extract',ic:'📑',t:'Extract Pages',d:'নির্দিষ্ট পেজ আলাদা করুন',desc:'যেমন "1,4-6" পেজগুলো নিয়ে নতুন PDF বানান।',hint:'যেমন: 1,4-6',acc:'application/pdf'},
+ {id:'protect',ic:'🔐',t:'Protect PDF',d:'পাসওয়ার্ড দিন',desc:'দুঃখিত, সম্পূর্ণ AES এনক্রিপশন ব্রাউজারে সম্ভব নয় — তাই এই টুল আপাতত অফ আছে। ভবিষ্যতে Vercel সার্ভার-ফাংশন দিয়ে যোগ করা হবে।',off:1,acc:'application/pdf'},
+];
+const grid=document.getElementById('grid'),ov=document.getElementById('overlay'),
+mtitle=document.getElementById('mtitle'),mdesc=document.getElementById('mdesc'),mbody=document.getElementById('mbody'),
+statusEl=document.getElementById('status');
+function render(filter){grid.innerHTML='';TOOLS.forEach(T=>{if(filter&&!(T.t+' '+T.d).toLowerCase().includes(filter.toLowerCase()))return;const c=document.createElement('div');c.className='card';c.style.opacity=T.off?'.5':'1';c.innerHTML='<span class="ico">'+T.ic+'</span><b>'+T.t+'</b><span>'+T.d+'</span>'+(T.off?'<span class="hint">শীঘ্রই আসছে</span>':'');c.onclick=()=>openTool(T);grid.appendChild(c);});}
+render();document.getElementById('search').oninput=e=>render(e.target.value);
+let files=null;
+function openTool(T){files=null;mtitle.textContent=T.ic+' '+T.t;mdesc.textContent=T.desc;mbody.innerHTML='';statusEl.innerHTML='';ov.classList.add('on');
+if(T.off){mbody.innerHTML='<p class="hint">এই টুল শীঘ্রই আসছে। আপাতত PDFBoss-এর বাকি সব টুল ব্রাউজারেই কাজ করে।</p>';return;}
+const d=document.createElement('div');d.className='drop';d.innerHTML='👆 ফাইল সিলেক্ট করুন (বা ড্র্যাগ-ড্রপ করুন)'+(T.id==='img2pdf'?'<div class="hint">ছবি (JPG/PNG) নেবে</div>':'');
+const inp=document.createElement('input');inp.type='file';inp.accept=T.acc||'application/pdf';if(T.multi)inp.multiple=true;inp.style.display='none';
+d.onclick=()=>inp.click();d.ondragover=e=>e.preventDefault();d.ondrop=e=>{e.preventDefault();setFiles(e.dataTransfer.files);};
+inp.onchange=()=>setFiles(inp.files);
+function setFiles(f){files=f;d.innerHTML='✅ '+f.length+' ফাইল সিলেক্ট হয়েছে<div class="filelist">'+[...f].map(x=>x.name).join(', ')+'</div>';d.appendChild(inp);}
+mbody.appendChild(d);d.appendChild(inp);
+let opts='';
+if(['organize','remove','extract'].includes(T.id))opts+='<div class="opt"><label>পেজ (ranges):</label><input id="pages" placeholder="'+(T.hint||'1-3,5')+'"></div>';
+if(T.id==='rotate')opts+='<div class="opt"><label>অ্যাঙ্গেল:</label><select id="deg"><option value="90">90° (ডানে)</option><option value="180">180°</option><option value="270">270° (বামে)</option></select></div>';
+if(T.id==='watermark')opts+='<div class="opt"><label>ওয়াটারমার্ক টেক্সট:</label><input id="wtxt" placeholder="যেমন: PDFBoss"></div>';
+if(T.id==='pagenum')opts+='<div class="opt"><label>নম্বরের অনুভূমিক পজিশন (%):</label><input id="pos" type="number" value="50" min="5"max="95"></div>';
+const b=document.createElement('button');b.className='btn';b.textContent='চালাও ▶';b.onclick=()=>run(T,b);
+mbody.insertAdjacentHTML('beforeend',opts);mbody.appendChild(b);}
+document.getElementById('close').onclick=()=>ov.classList.remove('on');
+ov.onclick=e=>{if(e.target===ov)ov.classList.remove('on');};
+function parseRanges(str,max){const s=new Set();if(!str||!str.trim()){for(let i=1;i<=max;i++)s.add(i);return s;}str.split(',').forEach(p=>{p=p.trim();if(p.includes('-')){const[a,b2]=p.split('-').map(Number);for(let i=a;i<=Math.min(b2,max);i++)if(i>=1)s.add(i);}else{const n=Number(p);if(n>=1&&n<=max)s.add(n);}});return s;}
+async function readAB(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsArrayBuffer(f);});}
+async function readURL(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});}
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();statusEl.innerHTML='<span class="ok">✅ সফল! ডাউনলোড শুরু — '+name+'</span>';}
+function err(m){statusEl.innerHTML='<span class="err">❌ '+m+'</span>';}
+const {PDFDocument,degrees,StandardFonts,rgb}=window.PDFLib;
+async function renderHTMLtoPDF(html){
+ const box=document.getElementById('renderbox');box.innerHTML=html;
+ const jsPDF=window.jspdf.jsPDF;const pdf=new jsPDF('p','pt','a4');const pw=pdf.internal.pageSize.getWidth();const ph=pdf.internal.pageSize.getHeight();
+ await new Promise(r=>setTimeout(r,80));
+ const cv=await html2canvas(box,{scale:2,windowWidth:794});
+ const iw=pw-56,ih=cv.height*iw/cv.width;
+ if(cv.width>794*2){const cut=Math.ceil(cv.height*(794*2)/cv.width);const c2=document.createElement('canvas');c2.width=794*2;c2.height=Math.min(cv.height,cut);const cx=c2.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,c2.width,c2.height);cx.drawImage(cv,0,0,c2.width,c2.height);await pdf.addImage(c2.toDataURL('image/jpeg',.92),'JPEG',28,28,iw,c2.height*iw/cv.width);}else{await pdf.addImage(cv.toDataURL('image/jpeg',.92),'JPEG',28,28,iw,ih);}
+ let y=28+ih;
+ while(y>ph-28){pdf.addPage();y-=(ph-56);}
+ const bytes=pdf.output('arraybuffer');
+ return new Blob([bytes],{type:'application/pdf'});
+}
+async function run(T,btn){try{if(!files||!files.length){err('আগে ফাইল সিলেক্ট করুন!');return;}btn.disabled=true;statusEl.innerHTML='⏳ প্রসেস হচ্ছে...';
+switch(T.id){
+case'merge':{const out=await PDFDocument.create();for(const f of files){const src=await PDFDocument.load(await readAB(f));const pg=await out.copyPages(src,src.getPageIndices());pg.forEach(p=>out.addPage(p));}dl(new Blob([await out.save()],{type:'application/pdf'}),'pdfboss-merged.pdf');break;}
+case'split':{const src=await PDFDocument.load(await readAB(files[0]));const zip=new JSZip();for(let i=0;i<src.getPageCount();i++){const one=await PDFDocument.create();const[p]=await one.copyPages(src,[i]);one.addPage(p);zip.file('page-'+(i+1)+'.pdf',await one.save());}dl(await zip.generateAsync({type:'blob'}),'pdfboss-split.zip');break;}
+case'organize':case'extract':case'remove':{const src=await PDFDocument.load(await readAB(files[0]));const n=src.getPageCount();const r=parseRanges(document.getElementById('pages').value,n);const keep=T.id==='remove'?Array.from({length:n},(_,i)=>i).filter(i=>!r.has(i+1)):[...r].sort((a,b2)=>a-b2).map(i=>i-1);const out=await PDFDocument.create();const pg=await out.copyPages(src,keep);pg.forEach(p=>out.addPage(p));dl(new Blob([await out.save()],{type:'application/pdf'}),'pdfboss-'+T.id+'.pdf');break;}
+case'compress':{const src=await PDFDocument.load(await readAB(files[0]),{ignoreEncryption:true});src.setTitle('');src.setAuthor('');src.setSubject('');src.setKeywords([]);src.setProducer('PDFBoss');src.setCreator('PDFBoss');dl(new Blob([await src.save({useObjectStreams:true})],{type:'application/pdf'}),'pdfboss-compressed.pdf');break;}
+case'rotate':{const src=await PDFDocument.load(await readAB(files[0]));const deg=Number(document.getElementById('deg').value);src.getPages().forEach(p=>p.setRotation(degrees((p.getRotation().angle+deg)%360)));dl(new Blob([await src.save()],{type:'application/pdf'}),'pdfboss-rotated.pdf');break;}
+case'img2pdf':{const out=await PDFDocument.create();for(const f of files){const url=await readURL(f);let img;if(/png/i.test(f.type))img=await out.embedPng(url);else img=await out.embedJpg(url);const p=out.addPage([img.width,img.height]);p.drawImage(img,{x:0,y:0,width:img.width,height:img.height});}dl(new Blob([await out.save()],{type:'application/pdf'}),'pdfboss-images.pdf');break;}
+case'pdf2img':{const pdf=await pdfjsLib.getDocument({data:await readAB(files[0])}).promise;const zip=new JSZip();for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const vp=page.getViewport({scale:1.5});const cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;const jpg=await new Promise(r=>cv.toBlob(r,'image/jpeg',.9));zip.file('page-'+i+'.jpg',jpg);}dl(await zip.generateAsync({type:'blob'}),'pdfboss-jpg.zip');break;}
+case'watermark':{const src=await PDFDocument.load(await readAB(files[0]));const txt=document.getElementById('wtxt').value||'PDFBoss';const f2=await src.embedFont(StandardFonts.HelveticaBold);src.getPages().forEach(p=>{const{width,height}=p.getSize();const size=Math.min(width,height)/8;p.drawText(txt,{x:width/2-(txt.length*size*.28),y:height/2-size/2,size,font:f2,color:rgb(.8,.2,.2),opacity:.3});});dl(new Blob([await src.save()],{type:'application/pdf'}),'pdfboss-watermark.pdf');break;}
+case'pagenum':{const src=await PDFDocument.load(await readAB(files[0]));const f2=await src.embedFont(StandardFonts.Helvetica);const pos=Number(document.getElementById('pos').value)||50;src.getPages().forEach((p,i)=>{const{width}=p.getSize();p.drawText(String(i+1),{x:width*pos/100,y:24,size:11,font:f2,color:rgb(.3,.3,.3)});});dl(new Blob([await src.save()],{type:'application/pdf'}),'pdfboss-numbered.pdf');break;}
+case'word2pdf':{const buf=await readAB(files[0]);const result=await mammoth.convertToHtml({arrayBuffer:buf});const blob=await renderHTMLtoPDF('<h2 style="font-family:sans-serif">'+(files[0].name.replace(/\.docx$/i,''))+'</h2>'+result.value);dl(blob,'pdfboss-word.pdf');break;}
+case'excel2pdf':{const wb=XLSX.read(await readAB(files[0]),{type:'array'});let html='';wb.SheetNames.forEach(name=>{const sh=wb.Sheets[name];html+='<h3 style="margin-top:14px">Sheet: '+name+'</h3>'+XLSX.utils.sheet_to_html(sh);});const blob=await renderHTMLtoPDF(html);dl(blob,'pdfboss-excel.pdf');break;}
+}
+}catch(e){console.error(e);err('সমস্যা: '+(e.message||e));}finally{btn.disabled=false;}}
+</script></body></html>
